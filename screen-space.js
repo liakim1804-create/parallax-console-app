@@ -262,8 +262,10 @@
        들어갈 자리가 아예 없으면 숨긴다 — 반쯤 잘려 보이거나 남의 자리를 덮는 것보다 낫다. */
     function layout() {
       const M = 12;
-      // 창 이름표와 단추가 위쪽에 떠 있다 — 모드 줄은 그 아래에서 시작한다
-      const TOP = 46;
+      /* 창 이름표(왼쪽)와 단추(오른쪽) 알약이 위쪽 띠에 뜬다.
+         모드 줄은 그 **둘과 같은 줄**에 세우고(윗변을 맞춘다), 오른쪽 레일만 띠 아래로 내린다. */
+      const CHROME = 46;
+      const MODES_TOP = 8;
       const W = body.clientWidth, H = body.clientHeight;
       if (!W || !H) return;
 
@@ -274,10 +276,10 @@
 
       const room = { w: W - M * 2, h: H - M * 2 };
       // 모드 줄: 가운데 위
-      if (mw > room.w || mh > H - TOP - M) modesEl.hidden = true;
+      if (mw > room.w || mh > H - MODES_TOP - M) modesEl.hidden = true;
       else {
         modesEl.style.left = Math.max(M, (W - mw) / 2) + 'px';
-        modesEl.style.top = TOP + 'px';
+        modesEl.style.top = MODES_TOP + 'px';
       }
       // 상태 칸: 왼쪽 아래
       if (cw > room.w || ch > room.h) chipEl.hidden = true;
@@ -287,8 +289,9 @@
       }
       // 오른쪽 레일: 남은 띠 안에서 가운데
       const x = W - M - rw;
-      let top = M, bottom = H - M;
-      if (!modesEl.hidden && (Math.max(M, (W - mw) / 2) + mw) > x - 8) top = Math.max(top, TOP + mh + 8);
+      // 레일은 오른쪽 가장자리라 단추 알약 바로 아래에서 시작한다
+      let top = CHROME, bottom = H - M;
+      if (!modesEl.hidden && (Math.max(M, (W - mw) / 2) + mw) > x - 8) top = Math.max(top, MODES_TOP + mh + 8);
       if (!chipEl.hidden && (M + cw) > x - 8) bottom = Math.min(bottom, H - M - ch - 8);
       if (rw > room.w || rh > Math.min(room.h, bottom - top)) railEl.hidden = true;
       else {

@@ -138,7 +138,7 @@
       `<section class="win glass" data-win="${w.id}">
          <div class="win-body"></div>
          <header class="win-bar">
-           <span class="win-title" title="${PX.esc(tab.name)}">
+           <span class="win-title">
              ${PX.icon(tab.icon)}<b>${PX.esc(tab.name)}</b>
            </span>
            <span class="win-btns">
@@ -252,6 +252,10 @@
       e.el.style.zIndex = w.z;
       e.el.classList.toggle('focus', wm.focused === w.id);
       e.el.classList.toggle('tiny', cw < 260);
+      // 이름이 빠지고 아이콘만 남을 때만 풍선말을 붙인다 (보이는 글자를 또 띄우지 않게)
+      const titleEl = e.el.querySelector('.win-title');
+      if (cw < 260) titleEl.setAttribute('title', PX.tabOf(w.id).name);
+      else titleEl.removeAttribute('title');
       e.el.classList.toggle('short', ch < 200);
 
       // 화면 안쪽에 지금 크기를 알려 준다 (TileMeasured).

@@ -9,6 +9,6 @@ MSG="${1:-웹 판 수정}"
 git add -A
 git diff --cached --quiet && { echo "바뀐 것이 없습니다."; exit 0; }
 git commit -q -m "$MSG"
-git push -q origin main
+env -u GH_TOKEN git push -q origin main
 echo "올렸습니다: $MSG"
 echo "   https://liakim1804-create.github.io/parallax-console-app/  (1~2분 뒤 반영)"

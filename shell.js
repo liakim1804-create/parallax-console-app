@@ -12,7 +12,19 @@
   const previewEl = PX.$('#drop-preview');
 
   const live = {};          // 탭 id → { win, bodyEl, inst, tile }
-  let railW = +(localStorage.getItem('railWidth') || 190);
+  /* 브라우저 저장소는 **없다고 보고 써야 한다.**
+     파일(file://)로 열면 크롬이 localStorage 접근에 예외를 던진다.
+     여기서 막히면 이 파일이 통째로 멈춰 화면이 백지가 된다 — 실제로 그랬다. */
+  const remember = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v == null ? fallback : v; }
+      catch (e) { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) { /* 못 적어도 그만이다 */ }
+    }
+  };
+  let railW = +remember.get('railWidth', 190);
   let railDrag = null;
 
   // ── 상태바 ─────────────────────────────────────────
@@ -93,7 +105,7 @@
         // 애매한 폭에서는 가까운 쪽으로 붙인다 — 아이콘만 보이거나, 이름까지 보이거나
         if (railW < 100) railW = 56;
         else if (railW < 140) railW = 150;
-        localStorage.setItem('railWidth', railW);   // 저장은 손을 놓을 때 한 번만
+        remember.set('railWidth', railW);   // 저장은 손을 놓을 때 한 번만
         railDrag = null;
         drawRail();
         sizeAll();

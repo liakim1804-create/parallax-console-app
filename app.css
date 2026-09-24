@@ -1,4 +1,4 @@
-/* 콘솔 껍데기: 상단 상태바 · 왼쪽 런처 · 떠 있는 창들 · 하단 작업표시줄
+/* 콘솔 껍데기: 상단 상태바 · 왼쪽 런처 · 떠 있는 창들 · 창 배치 독
    ContentView.swift / WindowSystem.swift 의 배치를 그대로 옮긴다. */
 
 #root {
@@ -241,35 +241,56 @@ body.resizing .win { box-shadow: none; }
 .divider:hover::after { background: color-mix(in srgb, var(--ink) 30%, transparent); }
 .divider.on::after { background: color-mix(in srgb, var(--ink) 45%, transparent); }
 
-/* ── 작업표시줄 ───────────────────────────────────────── */
-#taskbar {
-  height: 36px;
-  flex: none;
+/* ── 창 배치 독 ───────────────────────────────────────────
+   하단 바를 없애고 이것만 남겼다. 늘 떠 있으면 화면을 먹으므로
+   작업 영역 **아래쪽에 손이 왔을 때만** 떠오른다 (맥 독과 같은 방식). */
+#dock {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%) translateY(10px);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border-top: 1px solid var(--line);
-  font-size: var(--f-caption);
-  position: relative;
-  z-index: 3;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 999px;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s cubic-bezier(.2, .8, .2, 1);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
-.tb-win {
+/* 창 사이 틈에 깔리는 얇은 띠 — 눌림은 받지만 창 안 내용을 가리지 않는다 */
+#dock-zone {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 12px;
+  z-index: 9997;
+}
+
+#dock.on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.dock-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 10px;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
   border: 0;
   border-radius: 999px;
-  background: var(--fill-1);
+  background: transparent;
   cursor: pointer;
   font-size: var(--f-caption);
   font-weight: 500;
+  white-space: nowrap;
 }
-.tb-win.focus { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-.tb-win .x { font-size: 9px; opacity: .7; }
-.tb-win .x:hover { opacity: 1; }
-.tb-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tb-right .btn { height: 24px; font-size: var(--f-caption); }
-.tb-alert.on { color: var(--accent); }
+.dock-btn .ic { font-size: 14px; }
+.dock-btn:hover { background: var(--fill-1); }
+.dock-btn:active { background: var(--fill-2); }

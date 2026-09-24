@@ -166,6 +166,17 @@
         return;
       }
       m.frameLoaded = true;
+      /* iframe 은 마우스 이동을 저 혼자 먹는다 — 그러면 창 이름표·단추와 아래쪽 독이
+         3D 위에서는 영영 안 뜬다. 안에서 받은 이동을 바깥 좌표로 바꿔 다시 쏴 준다.
+         (다른 출처로 열렸으면 접근이 막히므로 조용히 넘어간다) */
+      try {
+        frame.contentDocument.addEventListener('mousemove', ev => {
+          const r = frame.getBoundingClientRect();
+          frame.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true, clientX: r.left + ev.clientX, clientY: r.top + ev.clientY
+          }));
+        });
+      } catch (e) { /* 파일로 열었을 때는 막힐 수 있다 */ }
       send({ p: 'orbit', on: true });     // 천천히 저절로 돈다
       const queued = m.pending.slice();
       m.pending.length = 0;

@@ -103,33 +103,41 @@
     });
   })();
 
-  // ── 작업표시줄 ─────────────────────────────────────
-  function drawTaskbar() {
-    const bar = PX.$('#taskbar');
-    bar.className = 'glass';
-    bar.innerHTML =
-      `<span class="sec">실행 중</span>` +
-      wm.openTabs.map(id => {
-        const t = PX.tabOf(id);
-        return `<button class="tb-win${wm.focused === id ? ' focus' : ''}" data-focus="${id}">
-                  ${PX.esc(t.short)}<span class="x" data-close="${id}">${PX.icon('close')}</span></button>`;
-      }).join('') +
-      `<div class="tb-right">
-         <span class="tb-alert${store.unseenAlertCount ? ' on' : ' sec'}">${PX.icon('bell')} 알림 ${store.unseenAlertCount}</span>
-         <button class="btn" data-tile="2">${PX.icon('split2')}2분할</button>
-         <button class="btn" data-tile="4">${PX.icon('split4')}4분할</button>
-         <button class="btn" data-reset="1">${PX.icon('reset')}위치 초기화</button>
-       </div>`;
-    bar.onclick = e => {
-      const close = e.target.closest('[data-close]');
-      if (close) { e.stopPropagation(); wm.close(close.dataset.close); return; }
-      const focus = e.target.closest('[data-focus]');
-      if (focus) { wm.focus(focus.dataset.focus); return; }
-      const tile = e.target.closest('[data-tile]');
-      if (tile) { wm.tile(+tile.dataset.tile); return; }
-      if (e.target.closest('[data-reset]')) wm.resetLayout();
-    };
-  }
+  /* ── 창 배치 독 ─────────────────────────────────────
+     하단 바를 없애고 세 단추만 남겼다. 작업 영역 아래쪽에 손이 왔을 때만 떠오른다 —
+     늘 떠 있으면 창 아래쪽(지도의 재생 막대, 3D 상태 칸)을 가린다. */
+  const dockEl = PX.$('#dock');
+  dockEl.innerHTML =
+    `<button class="dock-btn" data-tile="2">${PX.icon('split2')}2분할</button>
+     <button class="dock-btn" data-tile="4">${PX.icon('split4')}4분할</button>
+     <button class="dock-btn" data-reset="1">${PX.icon('reset')}위치 초기화</button>`;
+  dockEl.onclick = e => {
+    const tile = e.target.closest('[data-tile]');
+    if (tile) { wm.tile(+tile.dataset.tile); return; }
+    if (e.target.closest('[data-reset]')) wm.resetLayout();
+  };
+
+  /* 아래쪽 띠에 손이 들어오면 띄운다.
+     창 안에 iframe(공간 3D)이 있으면 그 위에서는 바깥이 마우스 이동을 못 받는다.
+     그래서 작업 영역 맨 아래에 **창 사이 틈만큼 얇은 띠**를 하나 깔아 그때도 잡는다. */
+  const DOCK_ZONE = 70;
+  let dockTimer = null;
+  const showDock = () => { clearTimeout(dockTimer); dockEl.classList.add('on'); };
+  const hideDock = ms => {
+    clearTimeout(dockTimer);
+    dockTimer = setTimeout(() => dockEl.classList.remove('on'), ms || 0);
+  };
+  const zoneEl = PX.el('<div id="dock-zone"></div>');
+  deskEl.appendChild(zoneEl);
+  zoneEl.addEventListener('mouseenter', showDock);
+  zoneEl.addEventListener('mouseleave', () => hideDock(350));
+  dockEl.addEventListener('mouseenter', showDock);
+  dockEl.addEventListener('mouseleave', () => hideDock(350));
+  deskEl.addEventListener('mousemove', e => {
+    const r = deskEl.getBoundingClientRect();
+    if ((r.bottom - e.clientY) <= DOCK_ZONE) showDock(); else hideDock(250);
+  });
+  deskEl.addEventListener('mouseleave', () => hideDock(200));
 
   // ── 창 ────────────────────────────────────────────
   function makeWindow(w) {
@@ -333,14 +341,10 @@
     if (what === 'drag') { drawPreview(); return; }
     if (what === 'frames') { return; }          // 경계 끌기는 sizeAll 이 직접 부른다
     drawRail();
-    drawTaskbar();
     syncWindows();
   });
   store.subscribe(what => {
-    if (what === 'incident' || what === 'messages' || what === 'alerts') {
-      drawStatusBar();
-      drawTaskbar();
-    }
+    if (what === 'incident' || what === 'messages' || what === 'alerts') drawStatusBar();
   });
 
   /* 단축키 — 맥 판의 「창 배치」·「앱」 메뉴와 같게 둔다.
@@ -390,6 +394,5 @@
   document.documentElement.dataset.theme = store.darkMode ? 'dark' : 'light';
   drawStatusBar();
   drawRail();
-  drawTaskbar();
   syncWindows();
 })(window.PX);

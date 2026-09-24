@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PARALLAX 지휘통제 콘솔</title>
+<!--
+  macOS 앱(ParallaxConsole, SwiftUI)을 그대로 웹으로 옮긴 것.
+  창 배치·화면 구성·글자 크기까지 Swift 판을 기준으로 맞춘다.
+  일반 <script> 로만 불러온다 — file:// 로 열어도 되게 하려는 것이다(ES module 은 막힌다).
+-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="screen-overview.css">
+<link rel="stylesheet" href="screen-map.css">
+<link rel="stylesheet" href="screen-space.css">
+<link rel="stylesheet" href="screen-transmit.css">
+<link rel="stylesheet" href="screen-handover.css">
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="ic-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="4.5" rx="1"/><rect x="13.5" y="10.5" width="7.5" height="10.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/></symbol>
+    <symbol id="ic-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h11"/><circle cx="20" cy="18" r="1.6"/></symbol>
+    <symbol id="ic-map" viewBox="0 0 24 24"><path d="M9 4 3 6.2v14L9 18l6 2 6-2.2v-14L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></symbol>
+    <symbol id="ic-officer" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.6-4 3.7-6 7.5-6s6.9 2 7.5 6"/></symbol>
+    <symbol id="ic-cctv" viewBox="0 0 24 24"><path d="M3.2 8.6 16 4.9l1.9 6.2-12.8 3.7z"/><path d="M7 15.4V18a2 2 0 0 0 2 2h5"/><path d="M17.9 11.1 21 10.2"/></symbol>
+    <symbol id="ic-briefing" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="ic-message" viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9h8M8 12.5h5"/></symbol>
+    <symbol id="ic-progress" viewBox="0 0 24 24"><path d="M6 4v16"/><circle cx="6" cy="7.5" r="2"/><circle cx="6" cy="16.5" r="2"/><path d="M10 7.5h9M10 16.5h6"/></symbol>
+    <symbol id="ic-ar" viewBox="0 0 24 24"><rect x="2.5" y="8.5" width="8" height="7" rx="2"/><rect x="13.5" y="8.5" width="8" height="7" rx="2"/><path d="M10.5 12h3M2.5 10.5 5 8M21.5 10.5 19 8"/></symbol>
+    <symbol id="ic-send" viewBox="0 0 24 24"><path d="M12 20V5"/><path d="M6.5 10.5 12 5l5.5 5.5"/><path d="M4 21h16"/></symbol>
+    <symbol id="ic-handover" viewBox="0 0 24 24"><path d="M9 4h6v3H9z"/><path d="M7 5.5H5V21h14V5.5h-2"/><path d="M8.5 12h7M8.5 16h4.5"/></symbol>
+    <symbol id="ic-warning" viewBox="0 0 24 24"><path d="M12 3.5 1.8 20.5h20.4z"/><path d="M12 9.5v5"/><circle cx="12" cy="17.6" r="1.05" class="fillnow"/></symbol>
+    <symbol id="ic-car" viewBox="0 0 24 24"><path d="M4.5 15.5h15l-1.7-5.4a2 2 0 0 0-1.9-1.4H8.1a2 2 0 0 0-1.9 1.4z"/><path d="M3.5 15.5h17v3h-17z"/><circle cx="7.5" cy="19.5" r="1.6"/><circle cx="16.5" cy="19.5" r="1.6"/></symbol>
+    <symbol id="ic-pin" viewBox="0 0 24 24"><path d="M12 21.5s7-6.8 7-11.4A7 7 0 1 0 5 10.1c0 4.6 7 11.4 7 11.4z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+    <symbol id="ic-flag" viewBox="0 0 24 24"><path d="M6 3v18"/><path d="M6 4.5h12l-2.8 4.2L18 13H6z"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24"><path d="M6.2 16.5v-5.2a5.8 5.8 0 1 1 11.6 0v5.2l2 3H4.2z"/><path d="M9.8 22h4.4"/></symbol>
+    <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/></symbol>
+    <symbol id="ic-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="ic-min" viewBox="0 0 24 24"><path d="M5 18h14"/></symbol>
+    <symbol id="ic-max" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></symbol>
+    <symbol id="ic-restore" viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="1.5"/><path d="M8 8V4h12v12h-4"/></symbol>
+    <symbol id="ic-front" viewBox="0 0 24 24"><rect x="3" y="9" width="12" height="12" rx="1.5"/><rect x="9" y="3" width="12" height="12" rx="1.5"/></symbol>
+    <symbol id="ic-split2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M12 4v16"/></symbol>
+    <symbol id="ic-split4" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M12 4v16M3 12h18"/></symbol>
+    <symbol id="ic-reset" viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2.3 5.7"/><path d="M4 5v6h6"/></symbol>
+    <symbol id="ic-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></symbol>
+    <symbol id="ic-play" viewBox="0 0 24 24"><path d="M7 4.5 19 12 7 19.5z"/></symbol>
+    <symbol id="ic-pause" viewBox="0 0 24 24"><rect x="6.5" y="4.5" width="4" height="15" rx="1"/><rect x="13.5" y="4.5" width="4" height="15" rx="1"/></symbol>
+    <symbol id="ic-sound" viewBox="0 0 24 24"><path d="M4 9.5h4L13 5v14l-5-4.5H4z"/><path d="M16.5 9a4.2 4.2 0 0 1 0 6"/></symbol>
+    <symbol id="ic-mute" viewBox="0 0 24 24"><path d="M4 9.5h4L13 5v14l-5-4.5H4z"/><path d="M16.5 9.5 21 14M21 9.5 16.5 14"/></symbol>
+    <symbol id="ic-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 9.5h.01M9.5 9.5h.01M13 9.5h.01M16.5 9.5h.01M6 13h.01M18 13h.01M9.5 15.5h5"/></symbol>
+    <symbol id="ic-capture" viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.6"/><path d="M9 6.5 10.5 4h3L15 6.5"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19.5 7"/></symbol>
+    <symbol id="ic-radio" viewBox="0 0 24 24"><path d="M7.5 4.5a10 10 0 0 0 0 15M16.5 4.5a10 10 0 0 1 0 15"/><circle cx="12" cy="12" r="2.4"/></symbol>
+    <symbol id="ic-pushpin" viewBox="0 0 24 24"><path class="fillnow" d="M9 3h6l-.9 6.2L17 12v2H7v-2l2.9-2.8z"/><path d="M12 14v7"/></symbol>
+    <symbol id="ic-dash" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+    <symbol id="ic-expand" viewBox="0 0 24 24"><path class="fillnow" d="M5 5h10L5 15z"/><path class="fillnow" d="M19 19H9l10-10z"/></symbol>
+    <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></symbol>
+    <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.6-3.6 3.4-5.6 7-5.6s6.4 2 7 5.6"/></symbol>
+    <!-- 작전 지도 조작 버튼 -->
+    <symbol id="ic-locate" viewBox="0 0 24 24"><path d="M20.2 3.8 3.9 10.5c-.8.3-.7 1.5.1 1.7l6.3 1.5 1.5 6.3c.2.8 1.4.9 1.7.1z"/></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+    <symbol id="ic-minus" viewBox="0 0 24 24"><path d="M5.5 12h13"/></symbol>
+    <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5s1.2-6.1 3.5-8.5z"/></symbol>
+    <symbol id="ic-incident" viewBox="0 0 24 24"><path d="M12 16.2s5-4.6 5-8.3a5 5 0 0 0-10 0c0 3.7 5 8.3 5 8.3z"/><path d="M12 5.6v2.6M12 10.3v.1"/><path d="M7.6 17c-2.1.4-3.4 1.1-3.4 2 0 1.3 3.5 2.3 7.8 2.3s7.8-1 7.8-2.3c0-.9-1.3-1.6-3.4-2"/></symbol>
+    <symbol id="ic-unit" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.2 19.5c.5-3.3 2.8-5.2 5.8-5.2s5.3 1.9 5.8 5.2"/><path d="M15.4 5.1a3 3 0 0 1 0 5.8M17.2 14.5c2 .6 3.3 2.2 3.6 5"/></symbol>
+    <symbol id="ic-space" viewBox="0 0 24 24"><path d="M4.5 20.5V6.8l7-3.1v16.8"/><path d="M11.5 9.3l8 2.9v8.3"/><path d="M2.8 20.5h18.4M7.5 9.2h1.5M7.5 12.6h1.5M7.5 16h1.5M14.7 14.2h1.5M14.7 17.4h1.5"/></symbol>
+    <symbol id="ic-plane" viewBox="0 0 24 24"><path d="M20.8 3.2 10.4 13.6"/><path d="M20.8 3.2 14.3 20.8l-3.9-7.2-7.2-3.9z"/></symbol>
+    <symbol id="ic-history" viewBox="0 0 24 24"><path d="M3.9 12a8.1 8.1 0 1 0 2.4-5.7L3.9 8.7"/><path d="M3.9 4.3v4.4h4.4"/><path d="M12 7.8V12l3 1.9"/></symbol>
+    <symbol id="ic-exclaim" viewBox="0 0 24 24"><path d="M12 5.8v8"/><path d="M12 18.3v.1"/></symbol>
+    <symbol id="ic-sidebar" viewBox="0 0 24 24"><rect x="2.8" y="4.5" width="18.4" height="15" rx="3"/><path d="M9.2 4.5v15M5.4 8.2h1.4M5.4 11h1.4M5.4 13.8h1.4"/></symbol>
+    <symbol id="ic-cube" viewBox="0 0 24 24"><path d="M12 3.2 19.8 7.6v8.8L12 20.8l-7.8-4.4V7.6z"/><path d="M4.2 7.6 12 12l7.8-4.4M12 12v8.8"/></symbol>
+    <symbol id="ic-chev-r" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+    <symbol id="ic-chev-l" viewBox="0 0 24 24"><path d="m14.5 5.5-6.5 6.5 6.5 6.5"/></symbol>
+    <symbol id="ic-arrow-up" viewBox="0 0 24 24"><path d="M12 19.5V5.5"/><path d="M5.5 12 12 5.5 18.5 12"/></symbol>
+    <symbol id="ic-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></symbol>
+    <!-- Swift 판에서 쓰는데 예전 스프라이트에 없던 것들 -->
+    <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="ic-eye-fill" viewBox="0 0 24 24"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3.2" class="fillnow"/></symbol>
+    <symbol id="ic-glasses" viewBox="0 0 24 24"><circle cx="6" cy="14" r="3.4"/><circle cx="18" cy="14" r="3.4"/><path d="M9.4 14h5.2M2.6 13 4.8 7.4h2.4M21.4 13 19.2 7.4h-2.4"/></symbol>
+    <symbol id="ic-to-bottom" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></symbol>
+    <symbol id="ic-to-right" viewBox="0 0 24 24"><path d="M4 12h11"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M20 5v14"/></symbol>
+    <symbol id="ic-zoom-in" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21M10.5 7.8v5.4M7.8 10.5h5.4"/></symbol>
+    <symbol id="ic-zoom-out" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21M7.8 10.5h5.4"/></symbol>
+    <symbol id="ic-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.8"/><path d="m4 17 5-5 4 4 3-2.5 4 3.5"/></symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24"><path d="M12 3s5 4.4 5 9a5 5 0 0 1-10 0c0-1.7.8-3.2 1.7-4.3.3 1.4 1 2.3 1.8 2.3 1.2 0 1.5-1.5 1.5-3.5 0-1.6-.5-2.8-1-3.5z"/></symbol>
+    <symbol id="ic-battery" viewBox="0 0 24 24"><rect x="2.5" y="8" width="16" height="8" rx="2"/><path d="M21 11v2"/><rect x="4.5" y="10" width="10" height="4" rx="1" class="fillnow"/></symbol>
+    <symbol id="ic-chev-ud" viewBox="0 0 24 24"><path d="M8 10.5 12 6.5l4 4M8 13.5l4 4 4-4"/></symbol>
+    <symbol id="ic-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h4"/></symbol>
+    <symbol id="ic-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.2"/></symbol>
+    <symbol id="ic-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M4.5 12a7.5 3.2 0 1 0 15 0 7.5 3.2 0 1 0-15 0" transform="rotate(-20 12 12)"/></symbol>
+  </defs>
+</svg>
+
+<div id="root">
+  <header id="statusbar"></header>
+  <div id="middle">
+    <nav id="rail"></nav>
+    <div id="railgrab" title="끌어서 앱 바 너비 조절"></div>
+    <main id="desk">
+      <div id="drop-preview" hidden></div>
+    </main>
+  </div>
+  <footer id="taskbar"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.js"></script>
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script src="tiling.js"></script>
+<script src="screen-overview.js"></script>
+<script src="screen-map.js"></script>
+<script src="screen-space.js"></script>
+<script src="screen-transmit.js"></script>
+<script src="screen-handover.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

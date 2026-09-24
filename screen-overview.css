@@ -1,0 +1,226 @@
+/* 전체 상황 (OverviewScreen.swift)
+   크기에 따라 달라지는 수치는 screen-overview.js 가 .ov-root 에 CSS 변수로 내려 준다:
+   --ov-inset  --ov-blockgap  --ov-cardinset  --ov-mgap  --ov-secgap
+   --ov-rowpad --ov-nametop-pb */
+
+.ov-root {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 기본값 — build() 가 곧바로 덮어쓴다 */
+  --ov-inset: var(--inset);
+  --ov-blockgap: var(--gap-block);
+  --ov-cardinset: 20px;
+  --ov-mgap: 16px;
+  --ov-secgap: 16px;
+  --ov-rowpad: 10px;
+  --ov-nametop-pb: 6px;
+}
+
+.ov-pad { padding: var(--ov-inset); }
+
+/* 덩어리 사이 선 — Divider().padding(.vertical, tile.blockGap)
+   theme.css 의 `hr.hair` 가 margin:0 이고 우선순위가 더 높아, 같은 세기로 눌러 준다 */
+hr.ov-blockdiv { margin: var(--ov-blockgap) 0; }
+
+/* ── 상황 요약 줄 ────────────────────────────────────────
+   FlexRow = LazyVGrid(.adaptive(minimum: 120)). 칸 폭이 같아야 숫자가 한 줄로 선다. */
+.ov-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  column-gap: var(--ov-mgap);
+  row-gap: 6px;
+  align-items: center;
+}
+.ov-metric {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ov-m-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 값을 칸 오른쪽 끝에 붙인다 (Spacer(minLength: 4)) */
+.ov-m-v {
+  margin-left: auto;
+  padding-left: 4px;
+  font-size: var(--f-label);
+  font-weight: 600;
+  flex: none;
+}
+
+/* 점 거터 — 점이 있든 없든 글자는 같은 x 에서 시작한다 */
+.ov-gutter {
+  width: 22px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── 구역 제목 (사건 브리핑 / 사건 목록) ─────────────────── */
+.ov-sec-title { display: block; padding-bottom: var(--ov-secgap); }
+
+/* ── 사건 브리핑 카드 ────────────────────────────────────
+   바탕은 카드 하나로 통일한다 — 구역은 얇은 선과 여백으로만 가른다 */
+.ov-card {
+  width: 100%;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ① 사건 이름 + 긴급 표시 + 사건번호 */
+.ov-card-head {
+  display: flex;
+  align-items: baseline;
+  padding: var(--ov-cardinset) var(--ov-cardinset) 14px;
+}
+/* 이름은 길면 접힌다 (Swift 쪽에도 lineLimit 이 없다) */
+.ov-inc-type {
+  font-size: var(--f-body);
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ov-head-right {
+  margin-left: auto;
+  padding-left: 8px;    /* Spacer(minLength: 8) */
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.ov-prio .dot {
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.ov-inc-id { padding-left: 10px; }
+
+/* ② 요약 한 문장 — 선을 사이에 두므로 아래 7 (위 간격 14 와 같아진다) */
+.ov-card-sum {
+  font-size: var(--f-label);
+  line-height: 1.5;          /* lineSpacing(4) */
+  padding: 0 var(--ov-cardinset) 7px;
+}
+/* 아주 낮으면 2줄로 자른다 */
+.ov-root.is-very-short .ov-card-sum {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* ③ 담당 · 장소 — 아래 여백은 js 가 인라인으로 정한다 */
+.ov-card-who { padding: 7px var(--ov-cardinset) 0; }
+
+/* ④ 위험 요소 */
+.ov-card-haz {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px var(--ov-cardinset) var(--ov-cardinset);
+}
+.ov-haz-ic {
+  width: 22px;
+  flex: none;
+  padding-top: 1px;
+  font-size: 11px;
+  color: var(--c-caution);
+  display: inline-flex;
+  align-items: flex-start;
+}
+.ov-haz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: var(--f-caption);
+  color: var(--ink);
+}
+
+/* ── 사건 목록 ───────────────────────────────────────── */
+.ov-list-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: var(--ov-secgap);
+}
+
+.ov-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--fill-1);
+  border-radius: 9px;
+  margin-bottom: var(--gap-title);
+}
+.ov-search .ic { font-size: 13px; color: var(--ink-2); }
+.ov-search-in {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--f-label);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ov-search-in::placeholder { color: var(--ink-3); }
+.ov-search-in::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+/* 행 */
+.ov-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: var(--ov-rowpad) 8px;
+  border-radius: 8px;
+  cursor: default;
+}
+.ov-row.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+.ov-row-id { width: 46px; flex: none; }
+.ov-row-main { flex: 1; min-width: 0; }
+
+.ov-row-top {
+  display: flex;
+  align-items: center;
+  padding-bottom: var(--ov-nametop-pb);
+}
+.ov-row-type {
+  font-size: var(--f-label);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  /* 좁아도 줄 높이는 같게 — 두 줄까지 두고 넘치면 말줄임 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ov-root.is-tiny .ov-row-type {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.ov-row-idr {
+  margin-left: auto;
+  padding-left: 6px;   /* Spacer(minLength: 6) */
+  flex: none;
+}
+
+/* 보조 줄들은 점 거터만큼 들여 쓴다 */
+.ov-row-sub {
+  padding-left: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ov-row-where { padding-bottom: 2px; }

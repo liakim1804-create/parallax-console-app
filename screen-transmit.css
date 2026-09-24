@@ -1,0 +1,290 @@
+/* 현장 정보 전송 창 (MessagesScreen.swift)
+   값(글자·여백·지름)은 Swift 쪽 숫자를 그대로 옮겼고, 색은 theme.css 변수만 쓴다. */
+
+.tx-root {
+  --tx-dd-w: 260px;
+  --tx-kind-w: 92px;
+  --tx-gutter: 40px;          /* 말풍선 반대쪽에 최소로 비우는 자리 */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── 머리글: 받는 대상 + 알림 종 ───────────────────────── */
+.tx-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+}
+.tx-head-gap { flex: 1; }
+
+/* 공통 드롭다운(GlassDropdown): 라벨은 직접 그리고 화살표는 하나만 둔다 */
+.tx-dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--glass-thin);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.tx-dd:hover { background: var(--fill-1); }
+.tx-dd.open { background: var(--fill-2); }
+.tx-dd-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--f-label);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tx-dd-chev { font-size: 9px; opacity: .65; stroke-width: 2.2; }
+.tx-dd-target { width: var(--tx-dd-w); flex: none; }
+.tx-kind { width: var(--tx-kind-w); flex: none; align-self: flex-start; }
+/* 낮은 창에서는 중요도 고르기를 접는다 — 입력칸과 보내기가 먼저 살아야 한다 */
+.tx-root.vshort .tx-kind { display: none; }
+
+.tx-bell {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+.tx-bell:hover { background: var(--fill-1); }
+.tx-bell.on { background: var(--fill-1); }
+.tx-badge {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  min-width: 14px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--c-urgent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* ── 드롭다운·오른쪽 단추 메뉴 ─────────────────────────── */
+.tx-menu {
+  position: absolute;
+  z-index: 50;
+  min-width: 150px;
+  max-width: calc(100% - 8px);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .18);
+  overflow-y: auto;
+}
+.tx-menu-sec {
+  padding: 6px 8px 2px;
+  font-size: var(--f-caption);
+  color: var(--ink-2);
+}
+.tx-menu-none {
+  padding: 6px 8px;
+  font-size: var(--f-caption);
+  color: var(--ink-3);
+}
+.tx-menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--f-label);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tx-menu-item:hover { background: var(--fill-1); }
+.tx-menu-item.on { color: var(--accent); font-weight: 600; }
+
+/* ── 대화 내역 ─────────────────────────────────────────── */
+.tx-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 8px;
+}
+.tx-empty {
+  padding-top: 20px;
+  font-size: var(--f-caption);
+  color: var(--ink-2);
+}
+
+.tx-row { display: flex; }
+.tx-row.mine { justify-content: flex-end; padding-left: var(--tx-gutter); }
+.tx-row.theirs { justify-content: flex-start; padding-right: var(--tx-gutter); }
+
+.tx-bubble {
+  /* 넓은 창에서 한 줄이 너무 길어지지 않게 */
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1.5px solid transparent;
+}
+.tx-row.theirs .tx-bubble { background: var(--fill-1); }
+.tx-row.mine .tx-bubble { background: var(--accent); color: #fff; }
+.tx-bubble.pinned { border-color: color-mix(in srgb, var(--c-urgent) 45%, transparent); }
+
+.tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--f-caption);
+  color: var(--ink-2);
+}
+.tx-row.mine .tx-meta { color: rgba(255, 255, 255, .85); }
+.tx-from { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-to { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 좁으면 보낸 쪽만 남긴다 — 받는 쪽은 위 드롭다운에 이미 있다 */
+.tx-root.vnarrow .tx-arrow,
+.tx-root.vnarrow .tx-to { display: none; }
+.tx-pin { font-size: 10px; flex: none; }
+
+.tx-kindchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  border-radius: 999px;
+}
+.tx-kindtext { font-size: var(--f-caption); font-weight: 700; }
+.tx-kindchip.urgent .tx-kindtext { color: var(--c-urgent); }
+.tx-kindchip.caution .tx-kindtext { color: var(--c-caution); }
+/* 내가 보낸 말풍선은 바탕이 파래서 색 글자가 묻힌다 — 흰 알약을 깐다 */
+.tx-row.mine .tx-kindchip { background: #fff; padding: 1px 8px; }
+
+.tx-text {
+  font-size: var(--f-label);
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tx-row.mine .tx-text { color: #fff; }
+.tx-row.theirs .tx-text { color: var(--ink); }
+
+.tx-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--f-caption);
+  color: var(--ink-2);
+}
+.tx-row.mine .tx-foot { color: rgba(255, 255, 255, .85); }
+.tx-readbtn {
+  border: 0;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--f-caption);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ── 작성 칸 ───────────────────────────────────────────── */
+.tx-composer-wrap { flex: none; padding: 12px; }
+.tx-root.narrow .tx-composer-wrap { padding: 8px; }
+
+/* 바깥 상자는 두지 않는다 — 중요도 단추와 입력칸이 이미 제 모양을 갖고 있어
+   한 겹 더 감싸면 회색 위에 회색이 겹쳐 답답해 보인다 */
+.tx-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+}
+
+.tx-input-row { display: flex; align-items: flex-end; gap: 8px; }
+.tx-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--fill-1);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--f-label);
+  line-height: 19px;
+  overflow-y: auto;
+}
+.tx-input::placeholder { color: var(--ink-3); }
+.tx-input:disabled { cursor: not-allowed; }
+
+/* 단추는 절대 줄지 않는다 */
+.tx-send {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.tx-send .ic { stroke-width: 2.4; }
+.tx-send.urgent { background: var(--c-urgent); }
+.tx-send:disabled { background: var(--fill-2); cursor: default; }
+
+/* ── 알림 기록 ─────────────────────────────────────────── */
+.tx-alerts {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px;
+}
+.tx-root:not(.alerts) .tx-alerts { display: none; }
+.tx-root.alerts .tx-thread,
+.tx-root.alerts .tx-composer-wrap { display: none; }
+
+.tx-alert { display: flex; align-items: flex-start; gap: 9px; padding: 10px 0; }
+.tx-alert > .dot { margin-top: 6px; }
+.tx-alert-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tx-alert-head { display: flex; align-items: center; gap: 8px; }
+.tx-alert-title { flex: 1; min-width: 0; font-size: var(--f-label); }
+.tx-alert-title.unseen { font-weight: 600; }
+.tx-alert-time { flex: none; }
+.tx-alert-detail { font-size: var(--f-label); color: var(--ink); }
+.tx-alert-detail.seen { color: var(--ink-2); }

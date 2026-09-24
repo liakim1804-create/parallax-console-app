@@ -1,0 +1,120 @@
+/* 공간 3D — SpaceScreen.swift 의 도구 모양을 옮긴 것.
+   단추는 모드 줄과 같은 크기(글자 14 · 높이 32)로 맞춘다. */
+
+.sp-root { position: relative; overflow: hidden; }
+
+.sp-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* 얹는 조각 셋 — 자리는 JS 가 정한다 (SpaceHostView.layout) */
+.sp-modes, .sp-rail, .sp-chip {
+  position: absolute;
+  z-index: 2;
+}
+
+/* 가운데 위: 무엇으로 볼지 고르는 줄 */
+.sp-modes {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.sp-mode {
+  border: 0;
+  background: transparent;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: var(--f-label);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sp-mode:has(.ic) { width: 34px; padding: 0; }
+.sp-mode.on { background: var(--accent); color: #fff; }
+
+/* 오른쪽 레일: 보기 고르기 + CCTV + 확대·자동 회전 */
+.sp-rail { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.sp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* 가장 긴 글자("CCTV")에 맞춘 한 값 — 단추마다 폭이 다르면 줄이 어긋나 보인다 */
+  width: 86px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--f-label);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sp-btn .ic { font-size: 12px; width: 15px; stroke-width: 2; }
+.sp-btn span { flex: 1; text-align: left; }
+.sp-btn.compact { width: 34px; padding: 0; justify-content: center; }
+.sp-btn.on { background: var(--accent); color: #fff; }
+.sp-btn:not(.on):hover { background: var(--fill-1); }
+
+/* 왼쪽 아래 상태 — 불러오는 중·탐색률·안 본 곳·CCTV·대표 공간 */
+.sp-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  white-space: nowrap;
+}
+.sp-chip .ic { font-size: 12px; stroke-width: 2; }
+.sp-strong { font-weight: 500; }
+.sp-accent { color: var(--accent); }
+.sp-warn { color: var(--c-urgent); }
+.sp-exit { border: 0; background: transparent; cursor: pointer; padding: 0; }
+.sp-exit:hover { color: var(--ink); }
+
+/* 「대표 공간」 — 직접 스캔한 현장이 아님을 밝히는 표시 */
+.sp-rep {
+  color: var(--c-caution);
+  background: color-mix(in srgb, var(--c-caution) 16%, transparent);
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-weight: 500;
+}
+
+.sp-spin {
+  width: 12px; height: 12px;
+  border: 2px solid var(--ink-3);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: sp-turn 0.8s linear infinite;
+}
+@keyframes sp-turn { to { transform: rotate(360deg); } }

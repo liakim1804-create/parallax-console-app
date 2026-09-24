@@ -1,0 +1,141 @@
+/* Theme.swift 를 그대로 옮긴 값들.
+   글자: 본문 16 · 보조 14 · 캡션 12
+   색: 긴급 빨강 · 주의 주황 · 일반 회색 (중요도는 원으로만 표시) */
+
+:root {
+  /* 글자 (Theme.body / label / caption) */
+  --f-body: 16px;
+  --f-label: 14px;
+  --f-caption: 12px;
+
+  /* 간격 (Theme.blockGap / titleGap / itemGap / inset) */
+  --gap-block: 20px;
+  --gap-title: 8px;
+  --gap-item: 8px;
+  --inset: 14px;
+
+  /* 중요도 — 맥 시스템 색과 같은 값 */
+  --c-urgent: #ff3b30;
+  --c-caution: #ff9500;
+  --c-normal: rgba(60, 60, 67, 0.6);
+
+  /* 강조색: macOS 기본 파랑 */
+  --accent: #007aff;
+  --accent-soft: rgba(0, 122, 255, 0.18);
+
+  /* 바탕·글자 (SwiftUI 의 .primary / .secondary 에 해당) */
+  --ink: #000;
+  --ink-2: rgba(60, 60, 67, 0.6);
+  --ink-3: rgba(60, 60, 67, 0.3);
+  --line: rgba(0, 0, 0, 0.11);
+  --desk: #f2f2f2;
+
+  /* .regularMaterial 흉내 — 뒤가 비치는 유리 */
+  --glass: rgba(246, 246, 246, 0.82);
+  --glass-thin: rgba(255, 255, 255, 0.6);
+  --blur: saturate(180%) blur(30px);
+
+  --fill-1: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.2);
+  --radius-win: 18px;
+  --font: -apple-system, BlinkMacSystemFont, "Pretendard Variable", Pretendard,
+          "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
+}
+
+/* 다크 모드. Swift 판과 같이 상태바 달 단추로 켠다 */
+:root[data-theme="dark"] {
+  --ink: #fff;
+  --ink-2: rgba(235, 235, 245, 0.6);
+  --ink-3: rgba(235, 235, 245, 0.3);
+  --line: rgba(255, 255, 255, 0.14);
+  --desk: #121212;
+  --accent: #0a84ff;
+  --accent-soft: rgba(10, 132, 255, 0.24);
+  --c-urgent: #ff453a;
+  --c-caution: #ff9f0a;
+  --c-normal: rgba(235, 235, 245, 0.6);
+  --glass: rgba(38, 38, 40, 0.78);
+  --glass-thin: rgba(58, 58, 60, 0.6);
+  --fill-1: rgba(120, 120, 128, 0.24);
+  --fill-2: rgba(120, 120, 128, 0.36);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+/* 브라우저 기본 규칙 `[hidden]{display:none}` 은 클래스 규칙에 진다.
+   우리는 `el.hidden = true` 로 조각을 감추는 곳이 많은데(사이드바·레일·최소화한 창 …),
+   그 조각들에 display 를 주는 순간 숨기기가 먹히지 않는다. 여기서 한 번에 못 박는다. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  font-size: var(--f-label);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; }
+
+/* 아이콘: 스프라이트를 선으로 그린다 (SF Symbols 대신) */
+.sprite { display: none; }
+.ic {
+  width: 1em; height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+.ic .fillnow { fill: currentColor; stroke: none; }
+
+/* 중요도 표시용 색 원 (모양은 항상 원) — PriorityDot */
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+.dot.urgent { background: var(--c-urgent); }
+.dot.caution { background: var(--c-caution); }
+.dot.normal { background: var(--c-normal); }
+
+.sec { color: var(--ink-2); }
+.cap { font-size: var(--f-caption); }
+.lab { font-size: var(--f-label); }
+.mono { font-variant-numeric: tabular-nums; }
+
+hr.hair {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 0;
+}
+
+/* 유리 재질. 크기를 끄는 동안에는 .no-glass 를 켜서 흐림을 끈다 —
+   흐림을 매 프레임 다시 계산하면 화면이 지직거린다 (Swift 판의 wm.resizing 과 같다) */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+body.resizing .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--desk);
+}
+
+/* 공용 단추 */
+.btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+  padding: 0 8px;
+  height: 28px;
+}
+.btn:hover { background: var(--fill-1); }
+.btn.on { background: var(--accent); color: #fff; }
+.btn.pill { border-radius: 999px; }
+.btn.icon { padding: 0; width: 32px; justify-content: center; }

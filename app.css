@@ -1,0 +1,275 @@
+/* 콘솔 껍데기: 상단 상태바 · 왼쪽 런처 · 떠 있는 창들 · 하단 작업표시줄
+   ContentView.swift / WindowSystem.swift 의 배치를 그대로 옮긴다. */
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  isolation: isolate;
+}
+
+/* 바탕: 옅은 그러데이션 (DesktopBackground) */
+#root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 55% 35%, color-mix(in srgb, var(--accent) 16%, transparent) 0, transparent 60%),
+    radial-gradient(circle at 5% 100%, rgba(175, 82, 222, 0.10) 0, transparent 46%),
+    var(--desk);
+}
+/* 왼쪽 아래 보라 빛은 밝을 때만. 어두운 바탕에서는 붉게 번져 창이 탁해 보인다 */
+:root[data-theme="dark"] #root::before {
+  background:
+    radial-gradient(circle at 55% 35%, color-mix(in srgb, var(--accent) 22%, transparent) 0, transparent 60%),
+    var(--desk);
+}
+
+/* ── 상태바 ─────────────────────────────────────────── */
+#statusbar {
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 3;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.sb-inc { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sb-inc b { color: var(--accent); font-size: var(--f-caption); }
+.sb-fake {
+  font-size: var(--f-caption);
+  color: var(--ink-2);
+  background: var(--fill-2);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.sb-stats { display: flex; gap: 14px; margin-left: auto; white-space: nowrap; }
+.sb-stat { display: flex; gap: 5px; font-size: var(--f-caption); }
+.sb-stat b { font-weight: 600; }
+.sb-icons { display: flex; gap: 10px; }
+.sb-icons .btn { width: 32px; height: 32px; padding: 0; justify-content: center; font-size: 15px; }
+
+/* ── 가운데: 런처 + 작업 영역 ─────────────────────────── */
+#middle { flex: 1; display: flex; min-height: 0; position: relative; }
+
+#rail {
+  flex: none;
+  width: 190px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--f-label);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.rail-item .ic { font-size: 17px; width: 18px; }
+.rail-item:hover { background: var(--fill-1); }
+.rail-item.open { background: var(--fill-1); }
+.rail-item.focus { background: var(--accent-soft); }
+#rail.compact .rail-item { justify-content: center; padding: 0; }
+#rail.compact .rail-item span { display: none; }
+
+#railgrab {
+  flex: none;
+  width: 8px;
+  cursor: col-resize;
+  position: relative;
+  z-index: 2;
+}
+#railgrab::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 1px;
+  background: var(--line);
+}
+
+/* ── 작업 영역과 창 ───────────────────────────────────── */
+#desk { flex: 1; position: relative; min-width: 0; overflow: hidden; }
+
+.win {
+  position: absolute;
+  border-radius: var(--radius-win);
+  overflow: hidden;
+  border: 0.8px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.14);
+}
+.win.focus {
+  border: 1.2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
+}
+body.resizing .win { box-shadow: none; }
+/* 자리를 옮기거나 붙을 때만 움직임을 준다 — 끄는 동안에는 손을 그대로 따라와야 한다 */
+.win.settling { transition: left .22s cubic-bezier(.2,.8,.2,1), top .22s cubic-bezier(.2,.8,.2,1),
+                            width .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1); }
+.win.dragging { opacity: .92; }
+
+/* 제목줄은 **칸을 차지하지 않는다**. 내용 위에 떠 있고 바탕도 없다 —
+   지도·3D 가 창을 가득 쓰게 하려는 것이다.
+   빈 자리는 누름을 받지 않고(`pointer-events: none`) 아래 내용이 그대로 받는다.
+   이름표와 단추만 유리 알약으로 떠 있고, 창에 손을 올렸을 때만 나타난다. */
+.win-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+/* 창 **위쪽**에 손이 올라왔을 때만 뜬다 (shell.js 가 .chrome 을 붙였다 뗀다).
+   제목줄은 누름을 받지 않으므로 :hover 로는 잡을 수 없어 손 자리를 직접 잰다.
+   끌고 있는 동안에는 손이 어디에 있든 남아 있어야 한다. */
+.win.chrome .win-bar, .win.dragging .win-bar { opacity: 1; }
+
+.win-title {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  max-width: 60%;
+  border-radius: 999px;
+  cursor: grab;
+  user-select: none;
+  background: var(--glass-thin);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.win-title:active { cursor: grabbing; }
+.win-title .ic { font-size: 14px; width: 17px; flex: none; }
+.win-title b {
+  font-size: var(--f-label);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 칸이 좁아지면 이름부터 떨어내고 아이콘만 남긴다 */
+.win.tiny .win-title b { display: none; }
+
+.win-btns {
+  pointer-events: auto;
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--glass-thin);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.win-btns button {
+  width: 26px; height: 26px;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+.win-btns button:hover { background: var(--fill-2); }
+
+/* 화면 쪽 CSS 가 이 칸에 `position: relative` 를 주는 곳이 있다(.mp-root 등).
+   나중에 불리는 파일이 이기므로 자식 선택자로 한 단계 세게 잡아 둔다 */
+.win > .win-body { position: absolute; inset: 0; overflow: hidden; }
+
+/* 놓을 자리 미리보기 (DropPreview) */
+#drop-preview {
+  position: absolute;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  pointer-events: none;
+  z-index: 9999;
+  transition: left .09s ease-out, top .09s ease-out, width .09s ease-out, height .09s ease-out;
+}
+
+/* 창과 창 사이 경계 (DividerHandle) — 가는 띠만 덮어 창 안 클릭을 가로채지 않는다 */
+.divider {
+  position: absolute;
+  z-index: 9998;
+  display: grid;
+  place-items: center;
+}
+.divider.v { cursor: col-resize; width: 12px; }
+.divider.h { cursor: row-resize; height: 12px; }
+.divider::after {
+  content: "";
+  border-radius: 999px;
+  background: transparent;
+  transition: background .12s ease;
+}
+.divider.v::after { width: 4px; height: 44px; }
+.divider.h::after { width: 44px; height: 4px; }
+.divider:hover::after { background: color-mix(in srgb, var(--ink) 30%, transparent); }
+.divider.on::after { background: color-mix(in srgb, var(--ink) 45%, transparent); }
+
+/* ── 작업표시줄 ───────────────────────────────────────── */
+#taskbar {
+  height: 36px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--f-caption);
+  position: relative;
+  z-index: 3;
+}
+.tb-win {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-1);
+  cursor: pointer;
+  font-size: var(--f-caption);
+  font-weight: 500;
+}
+.tb-win.focus { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.tb-win .x { font-size: 9px; opacity: .7; }
+.tb-win .x:hover { opacity: 1; }
+.tb-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.tb-right .btn { height: 24px; font-size: var(--f-caption); }
+.tb-alert.on { color: var(--accent); }

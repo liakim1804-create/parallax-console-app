@@ -1,0 +1,535 @@
+/* 작전 지도 — MapScreen.swift 의 모양을 옮긴 것 */
+
+.mp-root { position: relative; overflow: hidden; }
+.mp-canvas { position: absolute; inset: 0; }
+.mp-canvas .maplibregl-ctrl-attrib { font-size: 10px; }
+/* 나침반·확대 단추는 표식보다 위에 둔다 — 표식이 그 위를 덮으면 단추를 누를 수 없다.
+   대신 사이드바(4)보다는 아래라, 사이드바가 펼쳐지면 그 뒤로 숨는다 */
+.mp-canvas .maplibregl-ctrl-top-left,
+.mp-canvas .maplibregl-ctrl-top-right,
+.mp-canvas .maplibregl-ctrl-bottom-left,
+.mp-canvas .maplibregl-ctrl-bottom-right { z-index: 3; }
+
+/* 표식은 지도 위에 얹는 층 — 주석으로 두면 그리는 순서가 섞여 아이콘이 카드 위로 올라온다 */
+.mp-markers { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.mp-mark {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: auto;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 0 5px var(--halo);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: scale .15s ease-out;
+}
+.mp-mark .ic { font-size: 12px; stroke-width: 2.4; }
+.mp-mark b { font-weight: 700; }
+.mp-mark.big { scale: 1.28; }
+
+.mp-searchpin {
+  position: absolute;
+  top: 0; left: 0;
+  color: var(--c-urgent);
+  font-size: 20px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+.mp-searchpin .ic { stroke-width: 2.2; }
+
+.mp-pair {
+  position: absolute;
+  top: 0; left: 0;
+  background: var(--c-urgent);
+  color: #fff;
+  border: 1.5px solid #fff;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: var(--f-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 사이드바 ─────────────────────────────────────── */
+/* 위쪽은 떠 있는 창 이름표(호버 때 뜬다)와 겹치지 않게 비켜 둔다 */
+.mp-sidebar {
+  position: absolute;
+  left: 10px; top: 46px; bottom: 10px;
+  z-index: 4;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.resizing .mp-sidebar { box-shadow: none; }
+/* 첫 줄은 접기 아이콘 자리 — 검색바와 목록은 모두 이 아래로 내려온다 */
+.mp-side-top { display: flex; justify-content: flex-end; padding: 6px 8px 2px; }
+.mp-side-fold, .mp-toggle {
+  border: 0; background: transparent; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 8px;
+  display: grid; place-items: center; font-size: 15px;
+}
+.mp-side-fold:hover { background: var(--fill-1); }
+
+.mp-toggle {
+  position: absolute;
+  left: 10px; top: 46px;
+  z-index: 4;
+  width: 40px; height: 40px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.mp-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px 8px;
+  padding: 0 10px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--fill-1);
+}
+.mp-search input {
+  flex: 1; min-width: 0;
+  border: 0; background: transparent; outline: none;
+  font-size: var(--f-label);
+  color: inherit;
+}
+.mp-search input::-webkit-search-cancel-button { display: none; }
+.mp-clear { border: 0; background: transparent; cursor: pointer; color: var(--ink-2); display: grid; }
+
+/* 스크롤바와 글자가 겹치지 않게 오른쪽을 넉넉히 비운다 */
+.mp-scroll { flex: 1; overflow-y: auto; padding: 0 16px 10px 8px; }
+.mp-secline { padding: 0 8px 6px; font-weight: 500; }
+
+.mp-layer-wrap { position: relative; }
+.mp-layer, .mp-plain {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.mp-plain { cursor: default; }
+.mp-layer .ic, .mp-plain .ic { width: 19px; font-size: 15px; }
+.mp-layer .lab, .mp-plain .lab { flex: 1; font-weight: 500; }
+.mp-layer:hover { background: var(--fill-1); }
+.mp-layer.on { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.mp-layer-wrap .mp-layer { padding-right: 30px; }
+.mp-fold {
+  position: absolute;
+  right: 4px; top: 4px;
+  width: 24px; height: 24px;
+  border: 0; background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 11px;
+  transition: transform .2s ease-out;
+}
+.mp-fold.open { transform: rotate(90deg); }
+
+.mp-cases { padding: 6px 0 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+.mp-case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 7px 8px;
+  border: 0; border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.mp-case:hover { background: var(--fill-1); }
+.mp-case-t { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.mp-case-t b { font-weight: 500; }
+
+/* ── 사건 상세 ───────────────────────────────────── */
+.mp-back {
+  display: flex; align-items: center; gap: 2px;
+  border: 0; background: transparent; cursor: pointer;
+  color: var(--accent);
+  padding: 4px 0;
+  font-weight: 500;
+}
+.mp-case-head { display: flex; align-items: baseline; gap: 8px; padding-top: 10px; }
+.mp-case-head b { font-size: var(--f-body); font-weight: 600; }
+.mp-case-place { padding-top: 6px; }
+.mp-case-note { display: flex; align-items: flex-start; gap: 6px; padding-top: 10px; }
+.mp-sec { padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.mp-sec .hair { margin: 5px 0; }
+.mp-sec-h { display: flex; justify-content: space-between; }
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0; border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.mp-row:hover { background: var(--fill-1); }
+.mp-row.on { background: var(--fill-2); }
+.mp-row-ic {
+  width: 20px; height: 20px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  color: #fff;
+  flex: none;
+}
+.mp-row-ic.sq { border-radius: 6px; }
+.mp-row-ic .ic { font-size: 10px; stroke-width: 2.6; }
+.mp-row-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mp-row-t b { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-row-t span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-add {
+  display: flex; align-items: center; gap: 6px;
+  border: 0; background: transparent; cursor: pointer;
+  color: var(--accent);
+  height: 28px;
+  font-weight: 500;
+}
+
+.mp-result {
+  display: flex; flex-direction: column; gap: 1px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0; border-radius: 6px;
+  background: transparent; cursor: pointer;
+  text-align: left;
+}
+.mp-result:hover { background: var(--fill-1); }
+.mp-result b { font-weight: 500; }
+.mp-result span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── 오른쪽 위 조작 ──────────────────────────────── */
+/* 창 닫기·최대화 알약이 오른쪽 위에 뜨므로 그 아래로 내린다 */
+.mp-controls {
+  position: absolute;
+  right: 0; top: 44px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.mp-ctlgroup {
+  width: 44px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.mp-ctl {
+  width: 44px; height: 44px;
+  border: 0; background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 15px;
+}
+.mp-ctl:hover { background: var(--fill-1); }
+.mp-kinds {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.mp-kind {
+  width: 56px; height: 52px;
+  border: 0; border-radius: 10px;
+  background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font-weight: 500;
+}
+.mp-kind .ic { font-size: 16px; }
+.mp-kind.on { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+
+/* ── 재생 막대 ───────────────────────────────────── */
+.mp-play {
+  position: absolute;
+  left: 12px; bottom: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+/* 사이드바가 펼쳐져 있으면 그 옆으로 비킨다 */
+.mp-root:has(.mp-sidebar:not([hidden])) .mp-play { left: calc(min(220px, max(150px, 32%)) + 32px); }
+.mp-play-btn {
+  width: 30px; height: 30px;
+  border: 0; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+}
+.mp-play-btn .ic { font-size: 12px; stroke-width: 2.6; }
+.mp-play-btn.on { background: var(--accent); color: #fff; }
+.mp-time { font-size: var(--f-label); font-weight: 600; }
+.mp-time.accent { color: var(--accent); }
+.mp-range { width: 140px; accent-color: var(--accent); }
+.mp-now {
+  border: 0; border-radius: 999px;
+  background: var(--fill-2);
+  cursor: pointer;
+  height: 26px;
+  padding: 0 9px;
+  font-weight: 500;
+}
+
+/* ── 지도 위 카드 ────────────────────────────────── */
+.mp-cards { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.mp-card {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  padding: 10px;
+}
+.mp-cam { width: 300px; }
+.mp-card-h { display: flex; align-items: flex-start; gap: 8px; }
+.mp-card-t { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.mp-card-t b { font-weight: 600; }
+.mp-card-x {
+  width: 20px; height: 20px;
+  border: 0; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  color: var(--ink-2);
+  display: grid; place-items: center;
+  font-size: 10px;
+  flex: none;
+}
+
+/* CCTV 화면 — 사진 한 장을 모든 카메라가 함께 쓴다 */
+.mp-feed {
+  position: relative;
+  margin-top: 8px;
+  height: 158px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #000;
+}
+.mp-feed img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 글자가 밝은 노면 위에 얹히므로 위아래만 살짝 어둡게 깐다 */
+.mp-feed::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,.45), transparent 40%, transparent 60%, rgba(0,0,0,.45));
+  pointer-events: none;
+}
+.mp-feed-top, .mp-feed-bot {
+  position: absolute;
+  left: 6px; right: 6px;
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.85);
+  z-index: 1;
+}
+.mp-feed-top { top: 6px; }
+.mp-feed-bot { bottom: 6px; }
+.mp-rec { color: var(--c-urgent); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.mp-rec i { width: 6px; height: 6px; border-radius: 50%; background: var(--c-urgent); display: block; }
+.mp-traffic { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+
+/* 사건 브리핑 카드 — 전체 상황 창의 브리핑과 같은 위계 */
+.mp-brief { width: 320px; padding: 16px; }
+.mp-brief-h { display: flex; align-items: baseline; gap: 0; padding-bottom: 14px; }
+.mp-brief-name { font-size: var(--f-body); font-weight: 600; flex: 1; }
+.mp-brief-prio { display: flex; align-items: center; gap: 5px; }
+.mp-brief-id { padding-left: 10px; }
+.mp-brief-h .mp-card-x { margin-left: 6px; align-self: flex-start; }
+.mp-brief-sum { font-size: var(--f-label); line-height: 1.5; padding-bottom: 7px; }
+.mp-brief-meta { display: flex; flex-direction: column; gap: 4px; padding-top: 7px; }
+/* theme.css 의 `hr.hair` 가 margin:0 이라 요소까지 함께 적어 눌러 준다 */
+hr.mp-brief-line { margin-top: 10px; }
+.mp-brief-hz { display: flex; align-items: flex-start; padding-top: 10px; }
+.mp-hz-ic { width: 22px; flex: none; color: var(--c-caution); font-size: 11px; padding-top: 1px; }
+.mp-hz-list { display: flex; flex-direction: column; gap: 5px; }
+
+/* ── AR글래스 캠 ─────────────────────────────────── */
+.mp-ar { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.mp-ar.pip { display: flex; align-items: flex-end; justify-content: flex-end; padding: 12px; }
+.mp-pip {
+  pointer-events: auto;
+  width: var(--pip-w, 360px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+.mp-pip-h { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; }
+.mp-pip-h .spacer { flex: 1; }
+.mp-pip-btn {
+  width: 22px; height: 22px;
+  border: 0; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+.mp-pip-btn:hover { background: var(--fill-2); }
+.mp-arfeed {
+  position: relative;
+  margin: 0 8px 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+.mp-arfeed img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mp-arfeed::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,.45), transparent 40%, transparent 60%, rgba(0,0,0,.45));
+}
+/* 전체 모드 — 지도 자리를 현장 영상이 통째로 쓴다 */
+.mp-ar.full { pointer-events: auto; background: var(--desk); }
+.mp-ar.full .mp-arfeed { position: absolute; inset: 0; margin: 0; border-radius: 0; height: 100%; }
+.mp-arbar {
+  position: absolute;
+  right: 12px; top: 12px;
+  display: flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ── 오른쪽 누름 메뉴 ────────────────────────────── */
+.mp-menu {
+  position: absolute;
+  z-index: 20;
+  min-width: 180px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+.mp-menu-item {
+  display: block;
+  width: 100%;
+  border: 0; background: transparent;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--f-label);
+}
+.mp-menu-item:hover { background: var(--fill-1); }
+.mp-menu-item.danger { color: var(--c-urgent); }
+
+/* ── AR 영상 (ARScreen.swift) — 가상 화면이다 ────────── */
+.mp-scene {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #2e2e2e, #0f0f0f);
+}
+/* 건물 실루엣과 바닥 — 원본의 사각형 배치를 그대로 옮겼다 */
+.mp-scene-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(0,0,0,.75) 0 20%, transparent 20%),
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)) 4% 100% / 26% 55% no-repeat,
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)) 30% 100% / 20% 42% no-repeat,
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)) 52% 100% / 30% 62% no-repeat,
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)) 78% 100% / 22% 48% no-repeat;
+}
+.mp-scene-cross {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(100, 210, 255, 0.8);
+  font-size: 22px;
+}
+.mp-scene-cross .ic { stroke-width: 1.2; }
+.mp-scene-rec {
+  position: absolute; right: 10px; top: 10px;
+  display: flex; align-items: center; gap: 5px;
+  font-weight: 700;
+}
+.mp-scene-rec i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+.mp-scene-foot {
+  position: absolute; left: 10px; right: 10px; bottom: 10px;
+  display: flex; justify-content: space-between;
+  color: rgba(255, 255, 255, 0.85);
+}
+.mp-scene-lost {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.mp-ar-none {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+}
+/* 영상 안쪽에 얹는 조작부 */
+.mp-ar-top {
+  position: absolute;
+  left: 12px; top: 12px; right: 12px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 2;
+}
+.mp-ar-pick {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: var(--f-label);
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.mp-ar-pick > span { overflow: hidden; text-overflow: ellipsis; }
+.mp-ar-pick .ic { font-size: 9px; opacity: .65; flex: none; }
+.mp-ar-menu {
+  position: absolute;
+  left: 0; top: 32px;
+  min-width: 180px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  color: var(--ink);
+  z-index: 3;
+}
+.mp-ar-sec { padding: 6px 8px 2px; }
+.mp-ar-opt {
+  display: block; width: 100%;
+  border: 0; background: transparent;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--f-label);
+}
+.mp-ar-opt:hover { background: var(--fill-1); }
+.mp-ar-opt.on { color: var(--accent); font-weight: 600; }
+.mp-ar-batt {
+  display: flex; align-items: center; gap: 6px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}

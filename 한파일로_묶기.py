@@ -49,11 +49,14 @@ html = html.replace("cctv_street.jpg", uri)
 out.write_text(html, encoding="utf-8")
 print("만들었습니다:", out.name, "(%.1fMB)" % (out.stat().st_size / 1024 / 1024))
 
-# 데스크탑의 작업본(v2)도 같이 갈아 끼운다.
-# v1 은 손대지 않는다 — 되돌릴 자리로 남겨 둔 것이다.
-desk = pathlib.Path.home() / "Desktop" / "통제실 v2.html"
-if desk.parent.exists():
-    desk.write_text(html, encoding="utf-8")
-    print("데스크탑 작업본도 갱신:", desk.name)
+# 작업본(v2)도 같이 갈아 끼운다. v1 은 손대지 않는다 — 되돌릴 자리로 남겨 둔 것이다.
+# 자리는 한 곳으로 못 박는다. 이름만 보고 찾아 나서면 다른 프로젝트의 같은 이름 파일을
+# 덮어쓴다 (실제로 경찰모니터의 「통제실 v2.html」을 한 번 덮었다).
+TARGET = pathlib.Path.home() / "Desktop" / "통제실 작업물" / "통제실 v2.html"
+if TARGET.parent.exists():
+    TARGET.write_text(html, encoding="utf-8")
+    print("작업본 갱신:", TARGET.parent.name + "/" + TARGET.name)
+else:
+    print("작업본 자리를 못 찾았습니다:", TARGET)
 
 print("※ 공간 3D 와 지도는 인터넷이 있어야 뜹니다.")
